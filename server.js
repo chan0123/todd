@@ -249,8 +249,6 @@ app.post('/generate-todd', async (req, res) => {
       .join(', ');
 
     set('Typed or Printed Name of Grantor', d.grantor);
-    set('COUNTY OF', d.county);
-    set('STATE OF', d.state || 'California');
     set('Assessor Parcel Number', d.apn);
     set('Street Address', d.propertyAddress);
     set('City, State & Zip Code', cityStateZip);

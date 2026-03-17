@@ -41,7 +41,7 @@ The template has 17 `Tx` fields. Key mappings in `server.js`:
 | `legalDescription` | `Property Description` |
 | `witness1 / witness2` | `Typed or Printed Name of Witness #1 / #2` |
 
-Page 2 (notary acknowledgment) fields are intentionally **not filled** — left blank for the notary.
+Notary acknowledgment fields (`STATE OF`, `COUNTY OF`, `Name and title of the officer`, `Name of person signing`, `Date #2`) are intentionally **not filled** — the notary may be from a different state/county and must complete these themselves.
 
 ### Frontend state machine
 

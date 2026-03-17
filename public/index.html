@@ -157,10 +157,16 @@
         <h2 class="text-lg font-semibold text-slate-900">Review & Edit Information</h2>
         <p class="text-sm text-slate-400" id="reviewSubtitle">Fill in the details below</p>
       </div>
-      <button onclick="prefillTestData()"
-        class="text-xs text-slate-400 hover:text-slate-700 border border-slate-200 hover:border-slate-400 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-        Prefill test data
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="startQuestionnaire()" id="questionnaireBtn"
+          class="text-xs text-slate-400 hover:text-slate-700 border border-slate-200 hover:border-slate-400 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+          Step-by-step
+        </button>
+        <button onclick="prefillTestData()"
+          class="text-xs text-slate-400 hover:text-slate-700 border border-slate-200 hover:border-slate-400 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+          Prefill test data
+        </button>
+      </div>
     </div>
 
     <!-- Warning Banner -->
@@ -320,6 +326,46 @@
     </form>
   </div>
 
+  <!-- ── VIEW: Questionnaire ─────────────────────────────────────────────── -->
+  <div id="viewQuestionnaire" class="hidden fade-in">
+    <div class="flex items-center gap-3 mb-4">
+      <button onclick="qBack()" class="text-slate-400 hover:text-slate-700 transition-colors p-1 -ml-1 rounded">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="flex-1">
+        <h2 class="text-lg font-semibold text-slate-900">Step-by-Step Entry</h2>
+        <p id="q-step-label" class="text-sm text-slate-400"></p>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="w-full bg-slate-200 rounded-full h-1 mb-8">
+      <div id="q-progress" class="bg-slate-900 h-1 rounded-full transition-all duration-300" style="width:0%"></div>
+    </div>
+
+    <!-- Question card -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-4">
+      <h3 id="q-title" class="text-base font-semibold text-slate-900 mb-1"></h3>
+      <p id="q-subtitle" class="text-sm text-slate-400 mb-5"></p>
+      <div id="q-fields" class="space-y-4"></div>
+    </div>
+
+    <div id="q-error" class="hidden p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4"></div>
+
+    <div class="flex justify-between items-center">
+      <button onclick="qBack()" class="text-sm text-slate-500 hover:text-slate-800 transition-colors">← Back</button>
+      <button id="q-next-btn" onclick="qNext()"
+        class="px-5 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-2">
+        <span>Next</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <!-- ── VIEW: Success ────────────────────────────────────────────────────── -->
   <div id="viewSuccess" class="hidden fade-in">
     <div class="flex items-center justify-between mb-4">
@@ -391,12 +437,13 @@ let state = {
 };
 
 // ─── Views ────────────────────────────────────────────────────────────────────
-const ALL_VIEWS = ['viewModeSelect', 'viewUpload', 'viewReview', 'viewSuccess'];
+const ALL_VIEWS = ['viewModeSelect', 'viewUpload', 'viewReview', 'viewQuestionnaire', 'viewSuccess'];
 
 const VIEW_TO_STEP = {
   viewModeSelect: 1,
   viewUpload: 1,
   viewReview: 2,
+  viewQuestionnaire: 2,
   viewSuccess: 3,
 };
 
@@ -437,8 +484,10 @@ function updateStepIndicator() {
 function selectMode(mode) {
   state.mode = mode;
   if (mode === 'upload') {
+    document.getElementById('questionnaireBtn').classList.add('hidden');
     showView('viewUpload');
   } else {
+    document.getElementById('questionnaireBtn').classList.remove('hidden');
     document.getElementById('reviewSubtitle').textContent =
       'Fill in the property details below';
     showView('viewReview');
@@ -575,6 +624,13 @@ function populateForm(data) {
     legalDescription: 'f-legalDescription',
     recordingRequestedBy: 'f-recordingRequestedBy',
     mailTo: 'f-mailTo',
+    beneficiary1: 'f-beneficiary1',
+    beneficiary2: 'f-beneficiary2',
+    beneficiary3: 'f-beneficiary3',
+    beneficiary4: 'f-beneficiary4',
+    witness1: 'f-witness1',
+    witness2: 'f-witness2',
+    signingDate: 'f-signingDate',
   };
   for (const [key, id] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -713,6 +769,7 @@ function startOver() {
     pdfBlobUrl: null,
   };
 
+  document.getElementById('questionnaireBtn').classList.remove('hidden');
   document.getElementById('reviewForm').reset();
   ['b2row', 'b3row', 'b4row'].forEach((id) =>
     document.getElementById(id).classList.add('hidden')
@@ -728,6 +785,176 @@ function startOver() {
   hideExtractError();
 
   showView('viewModeSelect');
+}
+
+// ─── Questionnaire ────────────────────────────────────────────────────────────
+
+const Q_STEPS = [
+  {
+    title: 'Who owns this property?',
+    subtitle: 'Enter the full legal name exactly as it appears on the current deed.',
+    fields: [
+      { key: 'grantor', label: 'Owner Name (Grantor)', placeholder: 'e.g. John A. Smith', required: true },
+    ],
+  },
+  {
+    title: 'Where is the property located?',
+    subtitle: 'Enter the street address and city.',
+    fields: [
+      { key: 'propertyAddress', label: 'Street Address', placeholder: '123 Main Street' },
+      { key: 'city', label: 'City', placeholder: 'Los Angeles' },
+    ],
+  },
+  {
+    title: 'Property identifiers',
+    subtitle: 'The APN appears on your property tax bill or grant deed.',
+    fields: [
+      { key: 'zip', label: 'ZIP Code', placeholder: '90210' },
+      { key: 'apn', label: "Assessor's Parcel Number (APN)", placeholder: '1234-567-890', required: true },
+    ],
+  },
+  {
+    title: 'What is the legal description?',
+    subtitle: 'Paste it exactly as written in your grant deed — do not paraphrase.',
+    fields: [
+      { key: 'legalDescription', label: 'Legal Description', placeholder: 'Enter the complete legal description...', type: 'textarea', required: true },
+    ],
+  },
+  {
+    title: 'Recording details',
+    subtitle: 'Who is requesting the recording, and where should the recorded deed be mailed afterwards?',
+    fields: [
+      { key: 'recordingRequestedBy', label: 'Recording Requested By', placeholder: 'Full name or entity' },
+      { key: 'mailTo', label: 'Mail-to Address After Recording', placeholder: 'Full mailing address' },
+    ],
+  },
+  {
+    title: 'Who are the beneficiaries?',
+    subtitle: 'These people will receive the property upon your death. At least one is required.',
+    fields: [
+      { key: 'beneficiary1', label: 'Beneficiary 1', placeholder: 'Full legal name', required: true },
+      { key: 'beneficiary2', label: 'Beneficiary 2', placeholder: 'Full legal name (optional)' },
+      { key: 'beneficiary3', label: 'Beneficiary 3', placeholder: 'Full legal name (optional)' },
+      { key: 'beneficiary4', label: 'Beneficiary 4', placeholder: 'Full legal name (optional)' },
+    ],
+  },
+  {
+    title: 'Witnesses and signing date',
+    subtitle: 'Two witnesses must be present when you sign. They cannot be beneficiaries.',
+    fields: [
+      { key: 'witness1', label: 'Witness 1', placeholder: 'Full name', required: true },
+      { key: 'witness2', label: 'Witness 2', placeholder: 'Full name', required: true },
+      { key: 'signingDate', label: 'Signing Date', placeholder: 'e.g. March 17, 2026' },
+    ],
+  },
+];
+
+let qState = { step: 0, answers: {} };
+
+function escapeAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function startQuestionnaire() {
+  qState = { step: 0, answers: {} };
+  renderQStep();
+  showView('viewQuestionnaire');
+}
+
+function renderQStep() {
+  const stepDef = Q_STEPS[qState.step];
+  const total = Q_STEPS.length;
+  const isLast = qState.step === total - 1;
+
+  document.getElementById('q-title').textContent = stepDef.title;
+  document.getElementById('q-subtitle').textContent = stepDef.subtitle || '';
+  document.getElementById('q-step-label').textContent = `Step ${qState.step + 1} of ${total}`;
+  document.getElementById('q-progress').style.width = `${((qState.step + 1) / total) * 100}%`;
+  document.getElementById('q-next-btn').querySelector('span').textContent = isLast ? 'Review' : 'Next';
+  document.getElementById('q-error').classList.add('hidden');
+
+  const baseClass = 'w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition';
+
+  document.getElementById('q-fields').innerHTML = stepDef.fields.map((f) => {
+    const saved = escapeAttr(qState.answers[f.key] || '');
+    const req = f.required ? '<span class="text-red-400">*</span>' : '';
+    if (f.type === 'textarea') {
+      return `<div>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">${f.label} ${req}</label>
+        <textarea id="q-field-${f.key}" rows="5" placeholder="${escapeAttr(f.placeholder)}"
+          class="${baseClass} font-mono text-xs leading-relaxed">${saved}</textarea>
+      </div>`;
+    }
+    return `<div>
+      <label class="block text-sm font-medium text-slate-700 mb-1.5">${f.label} ${req}</label>
+      <input type="text" id="q-field-${f.key}" value="${saved}" placeholder="${escapeAttr(f.placeholder)}"
+        class="${baseClass}"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();qNext();}" />
+    </div>`;
+  }).join('');
+
+  const first = document.querySelector('#q-fields input, #q-fields textarea');
+  if (first) setTimeout(() => first.focus(), 50);
+}
+
+function qSaveStep() {
+  Q_STEPS[qState.step].fields.forEach((f) => {
+    const el = document.getElementById(`q-field-${f.key}`);
+    if (el) qState.answers[f.key] = el.value.trim();
+  });
+}
+
+function qNext() {
+  const missing = Q_STEPS[qState.step].fields
+    .filter((f) => f.required && !document.getElementById(`q-field-${f.key}`)?.value.trim())
+    .map((f) => f.label);
+
+  if (missing.length) {
+    const errEl = document.getElementById('q-error');
+    errEl.textContent = `Required: ${missing.join(', ')}`;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  qSaveStep();
+
+  if (qState.step < Q_STEPS.length - 1) {
+    qState.step++;
+    renderQStep();
+  } else {
+    finishQuestionnaire();
+  }
+}
+
+function qBack() {
+  qSaveStep();
+  if (qState.step > 0) {
+    qState.step--;
+    renderQStep();
+  } else {
+    showView('viewReview');
+  }
+}
+
+function finishQuestionnaire() {
+  // Show beneficiary rows for any filled optional beneficiaries
+  ['beneficiary2', 'beneficiary3', 'beneficiary4'].forEach((key, i) => {
+    if (qState.answers[key]) {
+      document.getElementById(`b${i + 2}row`).classList.remove('hidden');
+    }
+  });
+  if (state.beneficiaryCount < 4 &&
+      (qState.answers.beneficiary2 || qState.answers.beneficiary3 || qState.answers.beneficiary4)) {
+    state.beneficiaryCount = ['beneficiary2','beneficiary3','beneficiary4']
+      .filter(k => qState.answers[k]).length + 1;
+    if (state.beneficiaryCount >= 4) {
+      document.getElementById('addBeneficiaryBtn').classList.add('hidden');
+    }
+  }
+
+  populateForm(qState.answers);
+  document.getElementById('reviewSubtitle').textContent = 'Review your answers and make any corrections';
+  showView('viewReview');
 }
 
 // ─── Test Data ────────────────────────────────────────────────────────────────

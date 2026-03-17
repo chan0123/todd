@@ -308,9 +308,9 @@ app.post('/generate-todd', async (req, res) => {
     if (d.legalDescription) {
       const desc = d.legalDescription.trim();
       if (await fitsOnOneLine(pdfDoc, form, desc)) {
-        set('Property Description', desc);
+        setMultiline('Property Description', desc);
       } else {
-        set('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
+        setMultiline('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
         await addExhibitA(pdfDoc, desc);
       }
     }

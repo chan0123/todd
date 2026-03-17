@@ -67,7 +67,7 @@ Accepts a PDF upload, extracts text with `pdf-parse`, and calls GPT-4o to return
 ```json
 {
   "data": { ...extracted fields... },
-  "warnings": ["grantor", "apn"]
+  "warnings": ["granteeLineRaw", "apn"]
 }
 ```
 `warnings` lists required fields that GPT-4o could not confidently extract (highlighted in the UI for the user to complete).
@@ -81,7 +81,7 @@ Fills the PDF template with the provided data and returns the completed deed.
 **Request body (JSON):**
 ```json
 {
-  "grantor": "John A. Smith",
+  "owners": ["John A. Smith", "Mary B. Smith"],
   "propertyAddress": "123 Maple Street",
   "city": "Los Angeles",
   "state": "California",
@@ -100,7 +100,9 @@ Fills the PDF template with the provided data and returns the completed deed.
 }
 ```
 
-Required fields: `grantor`, `apn`, `legalDescription`, `beneficiary1`, `witness1`, `witness2`.
+Required fields: `owners` (at least one), `apn`, `legalDescription`, `beneficiary1`, `witness1`, `witness2`.
+
+One TODD is generated per owner and all are merged into a single PDF.
 
 **Response:** `application/pdf` — the filled TODD PDF.
 
@@ -156,7 +158,7 @@ The template has 17 AcroForm `Tx` fields. The following are filled by the app:
 
 | App field | PDF field name | Notes |
 |---|---|---|
-| `grantor` | `Typed or Printed Name of Grantor` | |
+| `owners[]` | `Typed or Printed Name of Grantor` | One TODD generated per owner, merged into one PDF |
 | `beneficiary1–4` | `Beneficiary(ies)` | Joined with newlines; 12pt font |
 | `apn` | `Assessor Parcel Number` | |
 | `propertyAddress` | `Street Address` | |

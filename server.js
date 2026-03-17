@@ -3,7 +3,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { PDFDocument, PDFName, PDFBool, PDFDict } = require('pdf-lib');
+const { PDFDocument, PDFName, PDFBool, PDFDict, StandardFonts, rgb } = require('pdf-lib');
 const OpenAI = require('openai');
 
 const app = express();
@@ -64,6 +64,79 @@ Return exactly this JSON structure (null for any missing field):
 
 Deed text:
 `;
+
+// ─── Exhibit A helper ─────────────────────────────────────────────────────────
+
+async function addExhibitA(pdfDoc, legalDescription) {
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const bold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const MARGIN      = 72;   // 1 inch
+  const FONT_TITLE  = 14;
+  const FONT_BODY   = 10;
+  const LINE_HEIGHT = FONT_BODY * 1.5;
+
+  // Word-wrap a single paragraph into lines that fit contentWidth
+  function wrapText(text, font, size, maxWidth) {
+    const lines = [];
+    for (const paragraph of text.split('\n')) {
+      if (paragraph.trim() === '') { lines.push(''); continue; }
+      const words = paragraph.split(' ');
+      let current = '';
+      for (const word of words) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (font.widthOfTextAtSize(candidate, size) > maxWidth && current) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = candidate;
+        }
+      }
+      if (current) lines.push(current);
+    }
+    return lines;
+  }
+
+  function newPage() {
+    const page = pdfDoc.addPage();
+    const { width, height } = page.getSize();
+    return { page, width, height, contentWidth: width - MARGIN * 2 };
+  }
+
+  let { page, width, height, contentWidth } = newPage();
+  let y = height - MARGIN;
+
+  // Title block
+  page.drawText('EXHIBIT A', {
+    x: MARGIN, y, size: FONT_TITLE, font: bold, color: rgb(0, 0, 0),
+  });
+  y -= FONT_TITLE + 6;
+
+  page.drawText('LEGAL DESCRIPTION', {
+    x: MARGIN, y, size: FONT_BODY + 1, font: bold, color: rgb(0, 0, 0),
+  });
+  y -= (FONT_BODY + 1) + 8;
+
+  // Divider
+  page.drawLine({
+    start: { x: MARGIN, y }, end: { x: width - MARGIN, y },
+    thickness: 0.75, color: rgb(0, 0, 0),
+  });
+  y -= 16;
+
+  // Body text
+  const lines = wrapText(legalDescription, regular, FONT_BODY, contentWidth);
+  for (const line of lines) {
+    if (y < MARGIN + LINE_HEIGHT) {
+      ({ page, width, height, contentWidth } = newPage());
+      y = height - MARGIN;
+    }
+    if (line !== '') {
+      page.drawText(line, { x: MARGIN, y, size: FONT_BODY, font: regular, color: rgb(0, 0, 0) });
+    }
+    y -= LINE_HEIGHT;
+  }
+}
 
 // ─── POST /extract ────────────────────────────────────────────────────────────
 
@@ -156,13 +229,33 @@ app.post('/generate-todd', async (req, res) => {
       .join(', ');
 
     set('Typed or Printed Name of Grantor', d.grantor);
-    set('Beneficiary(ies)', beneficiaries);
     set('COUNTY OF', d.county);
     set('STATE OF', d.state || 'California');
     set('Assessor Parcel Number', d.apn);
     set('Street Address', d.propertyAddress);
     set('City, State & Zip Code', cityStateZip);
-    set('Property Description', d.legalDescription);
+
+    // Beneficiary field: multiline + auto font size
+    const setMultiline = (name, value) => {
+      if (!value) return;
+      try {
+        const field = form.getTextField(name);
+        field.enableMultiline();
+        field.setFontSize(0);
+        field.setText(String(value).trim());
+      } catch {
+        // field not found — skip silently
+      }
+    };
+
+    setMultiline('Beneficiary(ies)', beneficiaries);
+
+    // Legal description → Exhibit A page; reference it in the form field
+    if (d.legalDescription) {
+      set('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
+      await addExhibitA(pdfDoc, d.legalDescription.trim());
+    }
+
     set('Recording Requested By', d.recordingRequestedBy);
     set('Street Address #2', d.mailTo);
     set('Typed or Printed Name of Witness #1', d.witness1);

@@ -261,7 +261,6 @@ app.post('/generate-todd', async (req, res) => {
       try {
         const field = form.getTextField(name);
         field.enableMultiline();
-        field.setFontSize(0);
         field.setText(String(value).trim());
       } catch {
         // field not found — skip silently

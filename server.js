@@ -65,7 +65,22 @@ Return exactly this JSON structure (null for any missing field):
 Deed text:
 `;
 
-// ─── Exhibit A helper ─────────────────────────────────────────────────────────
+// ─── Exhibit A helpers ────────────────────────────────────────────────────────
+
+// Returns true if the text fits in a single line of the Property Description field
+async function fitsOnOneLine(pdfDoc, form, text) {
+  if (text.includes('\n')) return false;
+  try {
+    const field = form.getTextField('Property Description');
+    const widgets = field.acroField.Widgets();
+    if (!widgets.length) return false;
+    const { width } = widgets[0].getRectangle();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    return font.widthOfTextAtSize(text, 10) <= width;
+  } catch {
+    return false; // if anything fails, use Exhibit A to be safe
+  }
+}
 
 async function addExhibitA(pdfDoc, legalDescription) {
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -250,10 +265,15 @@ app.post('/generate-todd', async (req, res) => {
 
     setMultiline('Beneficiary(ies)', beneficiaries);
 
-    // Legal description → Exhibit A page; reference it in the form field
+    // Legal description: inline if it fits on one line, otherwise Exhibit A
     if (d.legalDescription) {
-      set('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
-      await addExhibitA(pdfDoc, d.legalDescription.trim());
+      const desc = d.legalDescription.trim();
+      if (await fitsOnOneLine(pdfDoc, form, desc)) {
+        set('Property Description', desc);
+      } else {
+        set('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
+        await addExhibitA(pdfDoc, desc);
+      }
     }
 
     set('Recording Requested By', d.recordingRequestedBy);

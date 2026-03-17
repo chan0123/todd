@@ -301,7 +301,8 @@ app.post('/generate-todd', async (req, res) => {
   const d = req.body;
 
   const missing = [];
-  if (!d.owner) missing.push('Owner Name');
+  const owners = Array.isArray(d.owners) && d.owners.length ? d.owners : d.owner ? [d.owner] : [];
+  if (!owners.length) missing.push('Owner Name');
   if (!d.apn) missing.push('APN');
   if (!d.legalDescription) missing.push('Legal Description');
   if (!d.beneficiary1) missing.push('Beneficiary 1');
@@ -316,74 +317,81 @@ app.post('/generate-todd', async (req, res) => {
 
   try {
     const templatePath = path.join(__dirname, 'Revocable_Transfer_on_Death_Deed.pdf');
-    const pdfBytes = fs.readFileSync(templatePath);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const form = pdfDoc.getForm();
+    const templateBytes = fs.readFileSync(templatePath);
 
-    const set = (name, value) => {
-      if (!value) return;
-      try {
-        form.getTextField(name).setText(String(value).trim());
-      } catch {
-        // field not found in this template version — skip silently
+    // Fill one TODD per owner, then merge all into a single PDF
+    const filledDocs = await Promise.all(owners.map(async (ownerName) => {
+      const pdfDoc = await PDFDocument.load(templateBytes);
+      const form = pdfDoc.getForm();
+
+      const set = (name, value) => {
+        if (!value) return;
+        try {
+          form.getTextField(name).setText(String(value).trim());
+        } catch {
+          // field not found in this template version — skip silently
+        }
+      };
+
+      const setMultiline = (name, value) => {
+        if (!value) return;
+        try {
+          const field = form.getTextField(name);
+          field.enableMultiline();
+          field.acroField.setDefaultAppearance('/Helv 12 Tf 0 g');
+          field.setText(String(value).trim());
+        } catch {
+          // field not found — skip silently
+        }
+      };
+
+      const beneficiaries = [d.beneficiary1, d.beneficiary2, d.beneficiary3, d.beneficiary4]
+        .filter(Boolean)
+        .join('\n');
+
+      const cityStateZip = [d.city, d.state || 'California', d.zip]
+        .filter(Boolean)
+        .join(', ');
+
+      set('Typed or Printed Name of Grantor', ownerName);
+      set('Assessor Parcel Number', d.apn);
+      set('Street Address', d.propertyAddress);
+      set('City, State & Zip Code', cityStateZip);
+      setMultiline('Beneficiary(ies)', beneficiaries);
+
+      // Legal description: inline if fits one line, otherwise Exhibit A
+      if (d.legalDescription) {
+        const desc = d.legalDescription.trim();
+        if (await fitsOnOneLine(pdfDoc, form, desc)) {
+          setMultiline('Property Description', desc);
+        } else {
+          setMultiline('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
+          await addExhibitA(pdfDoc, desc);
+        }
       }
-    };
 
-    const beneficiaries = [d.beneficiary1, d.beneficiary2, d.beneficiary3, d.beneficiary4]
-      .filter(Boolean)
-      .join('\n');
+      set('Recording Requested By', d.recordingRequestedBy);
+      set('Name', d.recordingRequestedBy);
+      set('Street Address #2', d.mailTo);
+      set('Typed or Printed Name of Witness #1', d.witness1);
+      set('Typed or Printed Name of Witness #2', d.witness2);
+      set('Date', d.signingDate);
 
-    const cityStateZip = [d.city, d.state || 'California', d.zip]
-      .filter(Boolean)
-      .join(', ');
+      const acroForm = pdfDoc.catalog.lookupMaybe(PDFName.of('AcroForm'), PDFDict);
+      if (acroForm) acroForm.set(PDFName.of('NeedAppearances'), PDFBool.True);
 
-    set('Typed or Printed Name of Grantor', d.owner);
-    set('Assessor Parcel Number', d.apn);
-    set('Street Address', d.propertyAddress);
-    set('City, State & Zip Code', cityStateZip);
+      return pdfDoc;
+    }));
 
-    // Beneficiary field: multiline + auto font size
-    const setMultiline = (name, value) => {
-      if (!value) return;
-      try {
-        const field = form.getTextField(name);
-        field.enableMultiline();
-        // Set font size via the raw default appearance string (Helv = Helvetica, built-in PDF font)
-        field.acroField.setDefaultAppearance('/Helv 12 Tf 0 g');
-        field.setText(String(value).trim());
-      } catch {
-        // field not found — skip silently
-      }
-    };
-
-    setMultiline('Beneficiary(ies)', beneficiaries);
-
-    // Legal description: inline if it fits on one line, otherwise Exhibit A
-    if (d.legalDescription) {
-      const desc = d.legalDescription.trim();
-      if (await fitsOnOneLine(pdfDoc, form, desc)) {
-        setMultiline('Property Description', desc);
-      } else {
-        setMultiline('Property Description', 'See Exhibit A attached hereto and incorporated herein by this reference.');
-        await addExhibitA(pdfDoc, desc);
-      }
+    // Merge all filled TODDs into one PDF
+    const merged = await PDFDocument.create();
+    for (const doc of filledDocs) {
+      const pageIndices = doc.getPageIndices();
+      const pages = await merged.copyPages(doc, pageIndices);
+      pages.forEach((p) => merged.addPage(p));
     }
 
-    set('Recording Requested By', d.recordingRequestedBy);
-    set('Name', d.recordingRequestedBy);
-    set('Street Address #2', d.mailTo);
-    set('Typed or Printed Name of Witness #1', d.witness1);
-    set('Typed or Printed Name of Witness #2', d.witness2);
-    set('Date', d.signingDate);
-    // Page 2 (notary acknowledgment) is intentionally left blank for the notary to complete
-
-    // Tell PDF viewers to regenerate field appearances on open
-    const acroForm = pdfDoc.catalog.lookupMaybe(PDFName.of('AcroForm'), PDFDict);
-    if (acroForm) {
-      acroForm.set(PDFName.of('NeedAppearances'), PDFBool.True);
-    }
-
-    const filled = await pdfDoc.save();
+    const filled = await merged.save();
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="TODD_filled.pdf"');

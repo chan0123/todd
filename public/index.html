@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TODD AutoFill — California Transfer on Death Deed</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .warn-field { border-color: #d97706 !important; background-color: #fffbeb !important; }
+    .dragover { border-color: #1e293b !important; background-color: #f8fafc !important; }
+    .fade-in { animation: fadeIn 0.2s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    textarea { resize: vertical; }
+    .spin { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+<!-- ─── Header ─────────────────────────────────────────────────────────────── -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+  <div class="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-base font-semibold text-slate-900 leading-none">TODD AutoFill</h1>
+      <p class="text-xs text-slate-400 mt-0.5">California Revocable Transfer on Death Deed</p>
+    </div>
+    <span class="text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-full whitespace-nowrap">
+      Preparation Aid Only
+    </span>
+  </div>
+</header>
+
+<!-- ─── Main ──────────────────────────────────────────────────────────────── -->
+<main class="max-w-2xl mx-auto px-6 py-10">
+
+  <!-- Step Indicator -->
+  <div class="flex items-center justify-center mb-10 select-none">
+    <div class="flex items-center gap-2">
+      <div id="si-dot-1" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-900 text-white transition-colors">1</div>
+      <span id="si-label-1" class="text-sm font-medium text-slate-900 transition-colors">Input</span>
+    </div>
+    <div class="w-12 mx-3 h-px bg-slate-200"></div>
+    <div class="flex items-center gap-2">
+      <div id="si-dot-2" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-200 text-slate-500 transition-colors">2</div>
+      <span id="si-label-2" class="text-sm font-medium text-slate-400 transition-colors">Review</span>
+    </div>
+    <div class="w-12 mx-3 h-px bg-slate-200"></div>
+    <div class="flex items-center gap-2">
+      <div id="si-dot-3" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-200 text-slate-500 transition-colors">3</div>
+      <span id="si-label-3" class="text-sm font-medium text-slate-400 transition-colors">Generate</span>
+    </div>
+  </div>
+
+  <!-- ── VIEW: Mode Selection ─────────────────────────────────────────────── -->
+  <div id="viewModeSelect" class="fade-in">
+    <div class="text-center mb-8">
+      <h2 class="text-xl font-semibold text-slate-900 mb-2">How would you like to start?</h2>
+      <p class="text-sm text-slate-500">Upload an existing grant deed to auto-fill fields, or enter details manually.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <button onclick="selectMode('upload')"
+        class="group flex flex-col items-center p-8 bg-white rounded-xl border-2 border-slate-200 hover:border-slate-900 hover:shadow-md transition-all cursor-pointer">
+        <div class="w-12 h-12 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center mb-4 transition-colors">
+          <svg class="w-6 h-6 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Upload Grant Deed</h3>
+        <p class="text-xs text-slate-500 leading-relaxed text-center">Upload a PDF and we'll extract the property information automatically</p>
+      </button>
+
+      <button onclick="selectMode('manual')"
+        class="group flex flex-col items-center p-8 bg-white rounded-xl border-2 border-slate-200 hover:border-slate-900 hover:shadow-md transition-all cursor-pointer">
+        <div class="w-12 h-12 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center mb-4 transition-colors">
+          <svg class="w-6 h-6 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </div>
+        <h3 class="font-semibold text-slate-900 mb-1.5 text-sm">Enter Manually</h3>
+        <p class="text-xs text-slate-500 leading-relaxed text-center">Type in property details directly without uploading a document</p>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── VIEW: Upload ─────────────────────────────────────────────────────── -->
+  <div id="viewUpload" class="hidden fade-in">
+    <div class="flex items-center gap-3 mb-6">
+      <button onclick="goBack()" class="text-slate-400 hover:text-slate-700 transition-colors p-1 -ml-1 rounded">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <h2 class="text-lg font-semibold text-slate-900">Upload Grant Deed</h2>
+    </div>
+
+    <!-- Drop zone -->
+    <div id="uploadZone"
+      class="border-2 border-dashed border-slate-300 rounded-xl p-14 text-center cursor-pointer hover:border-slate-500 hover:bg-white transition-all bg-slate-50"
+      onclick="document.getElementById('fileInput').click()"
+      ondragover="handleDragOver(event)"
+      ondragleave="handleDragLeave(event)"
+      ondrop="handleDrop(event)">
+      <input type="file" id="fileInput" accept=".pdf,application/pdf" class="hidden" onchange="handleFileSelect(event)">
+
+      <div id="uploadPlaceholder">
+        <div class="w-14 h-14 bg-white border border-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+          <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <p class="text-sm font-medium text-slate-700 mb-1">Drop your grant deed here</p>
+        <p class="text-xs text-slate-400">or click to browse &nbsp;·&nbsp; PDF only &nbsp;·&nbsp; max 10MB</p>
+      </div>
+
+      <div id="fileSelected" class="hidden">
+        <div class="w-14 h-14 bg-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <p class="text-sm font-semibold text-slate-800 mb-1" id="selectedFileName"></p>
+        <p class="text-xs text-slate-400">Click to change file</p>
+      </div>
+    </div>
+
+    <div id="extractError" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
+
+    <div class="flex justify-between items-center mt-6">
+      <button onclick="goBack()" class="text-sm text-slate-500 hover:text-slate-800 transition-colors">← Back</button>
+      <button id="extractBtn" onclick="extractData()" disabled
+        class="px-5 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors flex items-center gap-2">
+        <svg id="extractSpinner" class="hidden w-4 h-4 spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+        <span id="extractBtnText">Extract Information</span>
+        <svg id="extractArrow" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── VIEW: Review Form ────────────────────────────────────────────────── -->
+  <div id="viewReview" class="hidden fade-in">
+    <div class="flex items-center gap-3 mb-2">
+      <button onclick="goBack()" class="text-slate-400 hover:text-slate-700 transition-colors p-1 -ml-1 rounded">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Review & Edit Information</h2>
+        <p class="text-sm text-slate-400" id="reviewSubtitle">Fill in the details below</p>
+      </div>
+    </div>
+
+    <!-- Warning Banner -->
+    <div id="warningBanner" class="hidden my-5 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+      <div class="flex gap-3">
+        <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.07 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-amber-800">Some fields need your attention</p>
+          <p class="text-sm text-amber-700 mt-0.5">Highlighted fields were not confidently extracted. Please verify and complete them.</p>
+        </div>
+      </div>
+    </div>
+
+    <form id="reviewForm" onsubmit="return false;" class="mt-5 space-y-4">
+
+      <!-- Property Owner -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Property Owner</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Owner Name (Grantor) <span class="text-red-400">*</span></label>
+            <input type="text" id="f-grantor" placeholder="Full legal name, e.g. John A. Smith"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">County <span class="text-red-400">*</span></label>
+            <input type="text" id="f-county" placeholder="e.g. Los Angeles"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Vesting</label>
+            <input type="text" id="f-vesting" placeholder="e.g. as community property"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Details -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Property Details</h3>
+        <div class="grid grid-cols-6 gap-4">
+          <div class="col-span-6">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Street Address</label>
+            <input type="text" id="f-propertyAddress" placeholder="123 Main Street"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div class="col-span-3">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">City</label>
+            <input type="text" id="f-city" placeholder="City"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div class="col-span-3">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">ZIP Code</label>
+            <input type="text" id="f-zip" placeholder="90210"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div class="col-span-6">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Assessor's Parcel Number (APN) <span class="text-red-400">*</span></label>
+            <input type="text" id="f-apn" placeholder="e.g. 1234-567-890"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Legal Description -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Legal Description</h3>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">
+          Legal Description <span class="text-red-400">*</span>
+          <span class="font-normal text-slate-400 ml-1">— paste exactly as it appears in the deed</span>
+        </label>
+        <textarea id="f-legalDescription" rows="6"
+          placeholder="Enter the complete legal description of the property..."
+          class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition font-mono text-xs leading-relaxed"></textarea>
+      </div>
+
+      <!-- Recording Info -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Recording Information</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Recording Date</label>
+            <input type="text" id="f-recordingDate" placeholder="e.g. January 1, 2020"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Instrument Number</label>
+            <input type="text" id="f-instrumentNumber" placeholder="Document number"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Recording Requested By</label>
+            <input type="text" id="f-recordingRequestedBy" placeholder="Name or entity requesting recording"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Mail-to Address After Recording</label>
+            <input type="text" id="f-mailTo" placeholder="Full mailing address"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Beneficiaries -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Beneficiaries</h3>
+        <p class="text-xs text-slate-400 mb-5">The property will transfer to these people upon your death. Up to 4.</p>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Beneficiary 1 <span class="text-red-400">*</span></label>
+            <input type="text" id="f-beneficiary1" placeholder="Full legal name"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div id="b2row" class="hidden">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Beneficiary 2</label>
+            <input type="text" id="f-beneficiary2" placeholder="Full legal name"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div id="b3row" class="hidden">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Beneficiary 3</label>
+            <input type="text" id="f-beneficiary3" placeholder="Full legal name"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div id="b4row" class="hidden">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Beneficiary 4</label>
+            <input type="text" id="f-beneficiary4" placeholder="Full legal name"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <button type="button" id="addBeneficiaryBtn" onclick="addBeneficiary()"
+            class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors mt-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add another beneficiary
+          </button>
+        </div>
+      </div>
+
+      <!-- Execution -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Execution</h3>
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Signing Date</label>
+            <input type="text" id="f-signingDate" placeholder="e.g. March 17, 2026"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Witness 1 <span class="text-red-400">*</span></label>
+            <input type="text" id="f-witness1" placeholder="Full name"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Witness 2 <span class="text-red-400">*</span></label>
+            <input type="text" id="f-witness2" placeholder="Full name"
+              class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation error -->
+      <div id="generateError" class="hidden p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"></div>
+
+      <!-- Generate button -->
+      <button type="button" id="generateBtn" onclick="generateTODD()"
+        class="w-full py-3.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2.5 text-sm">
+        <svg id="generateSpinner" class="hidden w-4 h-4 spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+        <svg id="generateIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <span id="generateBtnText">Generate Transfer on Death Deed</span>
+      </button>
+
+    </form>
+  </div>
+
+  <!-- ── VIEW: Success ────────────────────────────────────────────────────── -->
+  <div id="viewSuccess" class="hidden fade-in text-center py-16">
+    <div class="w-16 h-16 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+      <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <h2 class="text-xl font-semibold text-slate-900 mb-2">TODD Generated</h2>
+    <p class="text-sm text-slate-500 mb-2">Your filled deed has been downloaded.</p>
+    <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 inline-block mb-8">
+      Review all fields carefully before signing. This document requires notarization and two witnesses.
+    </p>
+    <div>
+      <button onclick="startOver()"
+        class="px-6 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors">
+        Start Over
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ─── Footer ─────────────────────────────────────────────────────────────── -->
+<footer class="max-w-2xl mx-auto px-6 pb-10 mt-2">
+  <div class="border-t border-slate-200 pt-6">
+    <p class="text-xs text-slate-400 leading-relaxed">
+      <span class="font-medium text-slate-500">Legal Disclaimer:</span> This tool is for document preparation assistance only and does not constitute legal advice. All information must be verified for accuracy and completeness. Consult a qualified California attorney before executing or recording any legal document.
+    </p>
+  </div>
+</footer>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let state = {
+  mode: null,
+  currentView: 'viewModeSelect',
+  selectedFile: null,
+  warnings: [],
+  beneficiaryCount: 1,
+};
+
+// ─── Views ────────────────────────────────────────────────────────────────────
+const ALL_VIEWS = ['viewModeSelect', 'viewUpload', 'viewReview', 'viewSuccess'];
+
+const VIEW_TO_STEP = {
+  viewModeSelect: 1,
+  viewUpload: 1,
+  viewReview: 2,
+  viewSuccess: 3,
+};
+
+function showView(id) {
+  ALL_VIEWS.forEach((v) => {
+    const el = document.getElementById(v);
+    if (v === id) {
+      el.classList.remove('hidden');
+      el.classList.add('fade-in');
+    } else {
+      el.classList.add('hidden');
+      el.classList.remove('fade-in');
+    }
+  });
+  state.currentView = id;
+  updateStepIndicator();
+}
+
+function updateStepIndicator() {
+  const active = VIEW_TO_STEP[state.currentView] || 1;
+  [1, 2, 3].forEach((n) => {
+    const dot = document.getElementById(`si-dot-${n}`);
+    const lbl = document.getElementById(`si-label-${n}`);
+    if (n < active) {
+      dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-400 text-white transition-colors';
+      lbl.className = 'text-sm font-medium text-slate-400 transition-colors';
+    } else if (n === active) {
+      dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-900 text-white transition-colors';
+      lbl.className = 'text-sm font-medium text-slate-900 transition-colors';
+    } else {
+      dot.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-200 text-slate-500 transition-colors';
+      lbl.className = 'text-sm font-medium text-slate-400 transition-colors';
+    }
+  });
+}
+
+// ─── Mode Selection ───────────────────────────────────────────────────────────
+function selectMode(mode) {
+  state.mode = mode;
+  if (mode === 'upload') {
+    showView('viewUpload');
+  } else {
+    document.getElementById('reviewSubtitle').textContent =
+      'Fill in the property details below';
+    showView('viewReview');
+  }
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function goBack() {
+  if (state.currentView === 'viewUpload') {
+    showView('viewModeSelect');
+  } else if (state.currentView === 'viewReview') {
+    if (state.mode === 'upload') {
+      showView('viewUpload');
+    } else {
+      showView('viewModeSelect');
+    }
+  }
+}
+
+// ─── File Upload ──────────────────────────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragover');
+}
+
+function handleDragLeave() {
+  document.getElementById('uploadZone').classList.remove('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) setFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) setFile(file);
+}
+
+function setFile(file) {
+  if (file.size > 10 * 1024 * 1024) {
+    showExtractError('File is too large. Maximum size is 10MB.');
+    return;
+  }
+  state.selectedFile = file;
+  document.getElementById('uploadPlaceholder').classList.add('hidden');
+  document.getElementById('fileSelected').classList.remove('hidden');
+  document.getElementById('selectedFileName').textContent = file.name;
+  document.getElementById('extractBtn').disabled = false;
+  hideExtractError();
+}
+
+function showExtractError(msg) {
+  const el = document.getElementById('extractError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function hideExtractError() {
+  document.getElementById('extractError').classList.add('hidden');
+}
+
+// ─── Extraction ───────────────────────────────────────────────────────────────
+async function extractData() {
+  if (!state.selectedFile) return;
+
+  const btn = document.getElementById('extractBtn');
+  const spinner = document.getElementById('extractSpinner');
+  const arrow = document.getElementById('extractArrow');
+  const btnText = document.getElementById('extractBtnText');
+
+  btn.disabled = true;
+  spinner.classList.remove('hidden');
+  arrow.classList.add('hidden');
+  btnText.textContent = 'Extracting…';
+  hideExtractError();
+
+  try {
+    const formData = new FormData();
+    formData.append('pdf', state.selectedFile);
+
+    const res = await fetch('/extract', { method: 'POST', body: formData });
+    const json = await res.json();
+
+    if (!res.ok) {
+      showExtractError(
+        json.error || 'Extraction failed. Please try again or use manual entry.'
+      );
+      return;
+    }
+
+    state.warnings = json.warnings || [];
+    populateForm(json.data);
+
+    document.getElementById('reviewSubtitle').textContent =
+      state.warnings.length > 0
+        ? 'Highlighted fields need your attention'
+        : 'Review the extracted information and make any corrections';
+
+    if (state.warnings.length > 0) {
+      document.getElementById('warningBanner').classList.remove('hidden');
+      highlightWarningFields();
+    }
+
+    showView('viewReview');
+  } catch {
+    showExtractError('Network error. Please check your connection and try again.');
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+    arrow.classList.remove('hidden');
+    btnText.textContent = 'Extract Information';
+  }
+}
+
+function populateForm(data) {
+  const map = {
+    grantor: 'f-grantor',
+    vesting: 'f-vesting',
+    propertyAddress: 'f-propertyAddress',
+    city: 'f-city',
+    zip: 'f-zip',
+    county: 'f-county',
+    apn: 'f-apn',
+    legalDescription: 'f-legalDescription',
+    recordingDate: 'f-recordingDate',
+    instrumentNumber: 'f-instrumentNumber',
+    recordingRequestedBy: 'f-recordingRequestedBy',
+    mailTo: 'f-mailTo',
+  };
+  for (const [key, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el && data[key]) el.value = data[key];
+  }
+}
+
+function highlightWarningFields() {
+  document.querySelectorAll('.warn-field').forEach((el) => el.classList.remove('warn-field'));
+  state.warnings.forEach((field) => {
+    const el = document.getElementById(`f-${field}`);
+    if (el) el.classList.add('warn-field');
+  });
+}
+
+// ─── Beneficiaries ────────────────────────────────────────────────────────────
+function addBeneficiary() {
+  if (state.beneficiaryCount >= 4) return;
+  state.beneficiaryCount++;
+  document.getElementById(`b${state.beneficiaryCount}row`).classList.remove('hidden');
+  if (state.beneficiaryCount >= 4) {
+    document.getElementById('addBeneficiaryBtn').classList.add('hidden');
+  }
+}
+
+// ─── Form Data & Validation ───────────────────────────────────────────────────
+function getFormData() {
+  const v = (id) => document.getElementById(id)?.value?.trim() || '';
+  return {
+    grantor: v('f-grantor'),
+    vesting: v('f-vesting'),
+    propertyAddress: v('f-propertyAddress'),
+    city: v('f-city'),
+    state: 'California',
+    zip: v('f-zip'),
+    county: v('f-county'),
+    apn: v('f-apn'),
+    legalDescription: v('f-legalDescription'),
+    recordingDate: v('f-recordingDate'),
+    instrumentNumber: v('f-instrumentNumber'),
+    recordingRequestedBy: v('f-recordingRequestedBy'),
+    mailTo: v('f-mailTo'),
+    beneficiary1: v('f-beneficiary1'),
+    beneficiary2: v('f-beneficiary2'),
+    beneficiary3: v('f-beneficiary3'),
+    beneficiary4: v('f-beneficiary4'),
+    witness1: v('f-witness1'),
+    witness2: v('f-witness2'),
+    signingDate: v('f-signingDate'),
+  };
+}
+
+function validateForm(d) {
+  const errors = [];
+  if (!d.grantor) errors.push('Owner Name (Grantor)');
+  if (!d.county) errors.push('County');
+  if (!d.apn) errors.push('APN');
+  if (!d.legalDescription) errors.push('Legal Description');
+  if (!d.beneficiary1) errors.push('Beneficiary 1');
+  if (!d.witness1) errors.push('Witness 1');
+  if (!d.witness2) errors.push('Witness 2');
+  return errors;
+}
+
+// ─── Generate TODD ────────────────────────────────────────────────────────────
+async function generateTODD() {
+  const data = getFormData();
+  const errors = validateForm(data);
+
+  const errEl = document.getElementById('generateError');
+
+  if (errors.length) {
+    errEl.innerHTML =
+      `<strong>Required fields missing:</strong> ${errors.join(', ')}`;
+    errEl.classList.remove('hidden');
+    errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('generateBtn');
+  const spinner = document.getElementById('generateSpinner');
+  const icon = document.getElementById('generateIcon');
+  const btnText = document.getElementById('generateBtnText');
+
+  btn.disabled = true;
+  spinner.classList.remove('hidden');
+  icon.classList.add('hidden');
+  btnText.textContent = 'Generating PDF…';
+
+  try {
+    const res = await fetch('/generate-todd', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      errEl.textContent = err.error || 'Generation failed. Please try again.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = (data.grantor || 'TODD').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    a.download = `TODD_${safeName}_${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showView('viewSuccess');
+  } catch {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+    icon.classList.remove('hidden');
+    btnText.textContent = 'Generate Transfer on Death Deed';
+  }
+}
+
+// ─── Start Over ───────────────────────────────────────────────────────────────
+function startOver() {
+  state = {
+    mode: null,
+    currentView: 'viewModeSelect',
+    selectedFile: null,
+    warnings: [],
+    beneficiaryCount: 1,
+  };
+
+  document.getElementById('reviewForm').reset();
+  ['b2row', 'b3row', 'b4row'].forEach((id) =>
+    document.getElementById(id).classList.add('hidden')
+  );
+  document.getElementById('addBeneficiaryBtn').classList.remove('hidden');
+  document.querySelectorAll('.warn-field').forEach((el) => el.classList.remove('warn-field'));
+  document.getElementById('warningBanner').classList.add('hidden');
+  document.getElementById('generateError').classList.add('hidden');
+  document.getElementById('uploadPlaceholder').classList.remove('hidden');
+  document.getElementById('fileSelected').classList.add('hidden');
+  document.getElementById('extractBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
+  hideExtractError();
+
+  showView('viewModeSelect');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+updateStepIndicator();
+</script>
+
+</body>
+</html>

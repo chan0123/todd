@@ -276,6 +276,7 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
     });
 
     const extracted = JSON.parse(completion.choices[0].message.content);
+    console.log('[/extract] LLM result:', JSON.stringify(extracted, null, 2));
 
     // Flag required fields that are null for UI highlighting
     const warnings = ['granteeLineRaw', 'apn', 'legalDescriptionFull'].filter(
@@ -300,7 +301,7 @@ app.post('/generate-todd', async (req, res) => {
   const d = req.body;
 
   const missing = [];
-  if (!d.grantor) missing.push('Owner Name');
+  if (!d.owner) missing.push('Owner Name');
   if (!d.apn) missing.push('APN');
   if (!d.legalDescription) missing.push('Legal Description');
   if (!d.beneficiary1) missing.push('Beneficiary 1');
@@ -336,7 +337,7 @@ app.post('/generate-todd', async (req, res) => {
       .filter(Boolean)
       .join(', ');
 
-    set('Typed or Printed Name of Grantor', d.grantor);
+    set('Typed or Printed Name of Grantor', d.owner);
     set('Assessor Parcel Number', d.apn);
     set('Street Address', d.propertyAddress);
     set('City, State & Zip Code', cityStateZip);

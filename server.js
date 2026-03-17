@@ -261,7 +261,8 @@ app.post('/generate-todd', async (req, res) => {
       try {
         const field = form.getTextField(name);
         field.enableMultiline();
-        try { field.setFontSize(8); } catch { /* ignore if unsupported */ }
+        // Set font size via the raw default appearance string (Helv = Helvetica, built-in PDF font)
+        field.acroField.setDefaultAppearance('/Helv 12 Tf 0 g');
         field.setText(String(value).trim());
       } catch {
         // field not found — skip silently

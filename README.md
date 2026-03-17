@@ -112,7 +112,8 @@ When a grant deed is uploaded, the following JSON schema is sent to GPT-4o. Fiel
 
 ```json
 {
-  "grantor": null,
+  "granteeNames": [],
+  "granteeLineRaw": null,
   "vesting": null,
   "propertyAddress": null,
   "city": null,
@@ -120,33 +121,32 @@ When a grant deed is uploaded, the following JSON schema is sent to GPT-4o. Fiel
   "zip": null,
   "county": null,
   "apn": null,
-  "legalDescription": null,
+  "legalDescriptionFull": null,
   "recordingDate": null,
   "instrumentNumber": null,
-  "bookPage": null,
   "preparer": null,
-  "mailTo": null,
+  "mailingAddressOnly": null,
   "recordingRequestedBy": null
 }
 ```
 
 | Field | Description |
 |---|---|
-| `grantor` | Full legal name of the current property owner |
+| `granteeNames` | Array of grantee (buyer/new owner) names extracted from the deed |
+| `granteeLineRaw` | The verbatim grantee line as it appears in the deed — used to populate the TODD owner field |
 | `vesting` | How title is held (e.g. "as community property") |
 | `propertyAddress` | Street address of the property |
 | `city` / `state` / `zip` | City, state, ZIP of the property |
 | `county` | County where the property is located |
 | `apn` | Assessor's Parcel Number |
-| `legalDescription` | Full legal description, preserved exactly as written |
+| `legalDescriptionFull` | Full legal description, preserved exactly as written |
 | `recordingDate` | Date the original deed was recorded |
 | `instrumentNumber` | County recorder document number |
-| `bookPage` | Book and page reference (older recorded documents) |
 | `preparer` | Name of the person or firm who prepared the deed |
-| `mailTo` | Mail-to address from the deed header |
+| `mailingAddressOnly` | Mail-to address from the deed header |
 | `recordingRequestedBy` | Entity that requested recording |
 
-> Note: only fields that map to the TODD PDF template are carried forward to `/generate-todd`. The extraction schema intentionally captures more context than is strictly needed for filling, to support potential future use.
+> Note: `granteeLineRaw`, `apn`, and `legalDescriptionFull` are the three required fields highlighted as warnings if missing. Only fields that map to the TODD PDF template are carried forward to `/generate-todd`.
 
 ---
 

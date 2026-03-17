@@ -57,7 +57,8 @@ const USER_PROMPT = `Extract all available fields from this California grant dee
 
 Return exactly this JSON structure (null for any missing field):
 {
-  "grantor": null,
+  "granteeNames": [],
+  "granteeLineRaw": null,
   "vesting": null,
   "propertyAddress": null,
   "city": null,
@@ -65,12 +66,11 @@ Return exactly this JSON structure (null for any missing field):
   "zip": null,
   "county": null,
   "apn": null,
-  "legalDescription": null,
+  "legalDescriptionFull": null,
   "recordingDate": null,
   "instrumentNumber": null,
-  "bookPage": null,
   "preparer": null,
-  "mailTo": null,
+  "mailingAddressOnly": null,
   "recordingRequestedBy": null
 }
 
@@ -270,8 +270,11 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
     const extracted = JSON.parse(completion.choices[0].message.content);
 
     // Flag required fields that are null for UI highlighting
-    const warnings = ['grantor', 'apn', 'legalDescription'].filter(
-      (f) => !extracted[f]
+    const warnings = ['granteeLineRaw', 'apn', 'legalDescriptionFull'].filter(
+      (f) => {
+        const val = extracted[f];
+        return !val || (Array.isArray(val) && val.length === 0);
+      }
     );
 
     res.json({ data: extracted, warnings });

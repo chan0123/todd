@@ -21,11 +21,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
+const ACCEPTED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/tiff',
+  'image/heic',
+  'image/heif',
+]);
+
 const upload = multer({
   dest: UPLOADS_DIR,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') cb(null, true);
-    else cb(new Error('Only PDF files are accepted'));
+    if (ACCEPTED_MIME_TYPES.has(file.mimetype)) cb(null, true);
+    else cb(new Error('Only PDF or image files (JPEG, PNG, WEBP, TIFF, HEIC) are accepted'));
   },
   limits: { fileSize: 10 * 1024 * 1024 },
 });
@@ -161,29 +171,50 @@ async function addExhibitA(pdfDoc, legalDescription) {
 // ─── POST /extract ────────────────────────────────────────────────────────────
 
 app.post('/extract', upload.single('pdf'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No PDF file provided' });
+  if (!req.file) return res.status(400).json({ error: 'No file provided' });
 
   const filePath = req.file.path;
+  const mimeType = req.file.mimetype;
 
   try {
-    // pdf-parse required here to avoid its startup file-write quirk
-    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
-    const buffer = fs.readFileSync(filePath);
-    const { text } = await pdfParse(buffer);
+    let messages;
 
-    if (!text || text.trim().length < 80) {
-      return res.status(422).json({
-        error:
-          'Could not extract text from this PDF — it may be a scanned image. Please use Manual Entry instead.',
-      });
+    if (mimeType === 'application/pdf') {
+      // PDF: extract text with pdf-parse, send as text to GPT-4o
+      const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+      const buffer = fs.readFileSync(filePath);
+      const { text } = await pdfParse(buffer);
+
+      if (!text || text.trim().length < 80) {
+        return res.status(422).json({
+          error: 'Could not extract text from this PDF — it may be a scanned image. Try uploading a photo of the deed instead.',
+        });
+      }
+
+      messages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: USER_PROMPT + text.substring(0, 8000) },
+      ];
+    } else {
+      // Image: send directly to GPT-4o vision as base64
+      const buffer = fs.readFileSync(filePath);
+      const base64 = buffer.toString('base64');
+
+      messages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: USER_PROMPT },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+          ],
+        },
+      ];
     }
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: USER_PROMPT + text.substring(0, 8000) },
-      ],
+      messages,
       response_format: { type: 'json_object' },
       temperature: 0,
       max_tokens: 2000,

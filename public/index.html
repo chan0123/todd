@@ -153,10 +153,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
         </svg>
       </button>
-      <div>
+      <div class="flex-1">
         <h2 class="text-lg font-semibold text-slate-900">Review & Edit Information</h2>
         <p class="text-sm text-slate-400" id="reviewSubtitle">Fill in the details below</p>
       </div>
+      <button onclick="prefillTestData()"
+        class="text-xs text-slate-400 hover:text-slate-700 border border-slate-200 hover:border-slate-400 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+        Prefill test data
+      </button>
     </div>
 
     <!-- Warning Banner -->
@@ -712,6 +716,32 @@ function startOver() {
   hideExtractError();
 
   showView('viewModeSelect');
+}
+
+// ─── Test Data ────────────────────────────────────────────────────────────────
+function prefillTestData() {
+  const data = {
+    'f-grantor':               'John A. Smith',
+    'f-county':                'Los Angeles',
+    'f-vesting':               'as community property',
+    'f-propertyAddress':       '123 Maple Street',
+    'f-city':                  'Los Angeles',
+    'f-zip':                   '90001',
+    'f-apn':                   '1234-567-890',
+    'f-legalDescription':      'LOT 42 OF TRACT NO. 1234, IN THE CITY OF LOS ANGELES, COUNTY OF LOS ANGELES, STATE OF CALIFORNIA, AS PER MAP RECORDED IN BOOK 56, PAGE 78 OF MAPS, IN THE OFFICE OF THE COUNTY RECORDER OF SAID COUNTY.',
+    'f-recordingDate':         'January 15, 2020',
+    'f-instrumentNumber':      '20200012345',
+    'f-recordingRequestedBy':  'John A. Smith',
+    'f-mailTo':                '123 Maple Street, Los Angeles, CA 90001',
+    'f-beneficiary1':          'Jane B. Smith',
+    'f-signingDate':           'March 17, 2026',
+    'f-witness1':              'Robert C. Jones',
+    'f-witness2':              'Mary D. Williams',
+  };
+  for (const [id, value] of Object.entries(data)) {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────

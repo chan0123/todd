@@ -653,11 +653,22 @@ function populateForm(data) {
     }
   });
 
-  // Populate owner from questionnaire path (single key)
+  // Populate owners from questionnaire path (owner, owner2, owner3 keys)
   if (data.owner) {
     const el = document.getElementById('f-owner');
     if (el) el.value = data.owner;
   }
+  ['owner2', 'owner3'].forEach((key, i) => {
+    if (data[key]) {
+      const rowId = `o${i + 2}row`;
+      const fieldId = `f-${key}`;
+      document.getElementById(rowId)?.classList.remove('hidden');
+      const el = document.getElementById(fieldId);
+      if (el) el.value = data[key];
+      state.ownerCount = Math.max(state.ownerCount, i + 2);
+      if (state.ownerCount >= 3) document.getElementById('addOwnerBtn')?.classList.add('hidden');
+    }
+  });
 
   const map = {
     propertyAddress: 'f-propertyAddress',
@@ -852,7 +863,8 @@ function startOver() {
 const Q_STEPS = [
   {
     title: 'Who owns this property?',
-    subtitle: 'Enter the full legal name exactly as it appears on the current deed.',
+    subtitle: 'Enter each owner\'s full legal name exactly as it appears on the current deed.',
+    type: 'owners',
     fields: [
       { key: 'owner', label: 'Owner 1', placeholder: 'e.g. John A. Smith', required: true },
     ],
@@ -909,14 +921,14 @@ const Q_STEPS = [
   },
 ];
 
-let qState = { step: 0, answers: {} };
+let qState = { step: 0, answers: {}, ownerCount: 1 };
 
 function escapeAttr(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 
 function startQuestionnaire() {
-  qState = { step: 0, answers: {} };
+  qState = { step: 0, answers: {}, ownerCount: 1 };
   renderQStep();
   showView('viewQuestionnaire');
 }
@@ -935,37 +947,97 @@ function renderQStep() {
 
   const baseClass = 'w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition';
 
-  document.getElementById('q-fields').innerHTML = stepDef.fields.map((f) => {
-    const saved = escapeAttr(qState.answers[f.key] || '');
-    const req = f.required ? '<span class="text-red-400">*</span>' : '';
-    if (f.type === 'textarea') {
-      return `<div>
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">${f.label} ${req}</label>
-        <textarea id="q-field-${f.key}" rows="5" placeholder="${escapeAttr(f.placeholder)}"
-          class="${baseClass} font-mono text-xs leading-relaxed">${saved}</textarea>
+  if (stepDef.type === 'owners') {
+    const ownerKeys = ['owner', 'owner2', 'owner3'];
+    let html = '';
+    for (let i = 0; i < qState.ownerCount; i++) {
+      const key = ownerKeys[i];
+      const saved = escapeAttr(qState.answers[key] || '');
+      const label = i === 0 ? 'Owner 1 <span class="text-red-400">*</span>' : `Owner ${i + 1}`;
+      html += `<div>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">${label}</label>
+        <input type="text" id="q-field-${key}" value="${saved}" placeholder="Full legal name"
+          class="${baseClass}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();qNext();}" />
       </div>`;
     }
-    return `<div>
-      <label class="block text-sm font-medium text-slate-700 mb-1.5">${f.label} ${req}</label>
-      <input type="text" id="q-field-${f.key}" value="${saved}" placeholder="${escapeAttr(f.placeholder)}"
-        class="${baseClass}"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();qNext();}" />
-    </div>`;
-  }).join('');
+    if (qState.ownerCount < 3) {
+      html += `<button type="button" onclick="qAddOwner()"
+        class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors mt-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add another owner
+      </button>`;
+    }
+    document.getElementById('q-fields').innerHTML = html;
+  } else {
+    document.getElementById('q-fields').innerHTML = stepDef.fields.map((f) => {
+      const saved = escapeAttr(qState.answers[f.key] || '');
+      const req = f.required ? '<span class="text-red-400">*</span>' : '';
+      if (f.type === 'textarea') {
+        return `<div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">${f.label} ${req}</label>
+          <textarea id="q-field-${f.key}" rows="5" placeholder="${escapeAttr(f.placeholder)}"
+            class="${baseClass} font-mono text-xs leading-relaxed">${saved}</textarea>
+        </div>`;
+      }
+      return `<div>
+        <label class="block text-sm font-medium text-slate-700 mb-1.5">${f.label} ${req}</label>
+        <input type="text" id="q-field-${f.key}" value="${saved}" placeholder="${escapeAttr(f.placeholder)}"
+          class="${baseClass}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();qNext();}" />
+      </div>`;
+    }).join('');
+  }
 
   const first = document.querySelector('#q-fields input, #q-fields textarea');
   if (first) setTimeout(() => first.focus(), 50);
 }
 
 function qSaveStep() {
-  Q_STEPS[qState.step].fields.forEach((f) => {
+  const stepDef = Q_STEPS[qState.step];
+  if (stepDef.type === 'owners') {
+    ['owner', 'owner2', 'owner3'].forEach((key) => {
+      const el = document.getElementById(`q-field-${key}`);
+      if (el) qState.answers[key] = el.value.trim();
+    });
+    return;
+  }
+  stepDef.fields.forEach((f) => {
     const el = document.getElementById(`q-field-${f.key}`);
     if (el) qState.answers[f.key] = el.value.trim();
   });
 }
 
+function qAddOwner() {
+  if (qState.ownerCount >= 3) return;
+  qSaveStep();
+  qState.ownerCount++;
+  renderQStep();
+  // focus the new field
+  const keys = ['owner', 'owner2', 'owner3'];
+  const newEl = document.getElementById(`q-field-${keys[qState.ownerCount - 1]}`);
+  if (newEl) setTimeout(() => newEl.focus(), 50);
+}
+
 function qNext() {
-  const missing = Q_STEPS[qState.step].fields
+  const stepDef = Q_STEPS[qState.step];
+  // owners step: only owner (first) is required
+  if (stepDef.type === 'owners') {
+    const firstEl = document.getElementById('q-field-owner');
+    if (!firstEl?.value.trim()) {
+      const errEl = document.getElementById('q-error');
+      errEl.textContent = 'Required: Owner 1';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    qSaveStep();
+    qState.step++;
+    renderQStep();
+    return;
+  }
+  const missing = stepDef.fields
     .filter((f) => f.required && !document.getElementById(`q-field-${f.key}`)?.value.trim())
     .map((f) => f.label);
 

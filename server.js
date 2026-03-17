@@ -83,13 +83,18 @@ async function fitsOnOneLine(pdfDoc, form, text) {
   try {
     const field = form.getTextField('Property Description');
     const widgets = field.acroField.Widgets();
-    if (!widgets.length) return false;
-    const { width } = widgets[0].getRectangle();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    return font.widthOfTextAtSize(text, 10) <= width;
+    if (widgets.length) {
+      const { width } = widgets[0].getRectangle();
+      if (width > 0) {
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        return font.widthOfTextAtSize(text, 10) <= width;
+      }
+    }
   } catch {
-    return false; // if anything fails, use Exhibit A to be safe
+    // fall through to character-count heuristic
   }
+  // Fallback: ~80 chars fits comfortably on one line in most PDF fields
+  return text.length <= 80;
 }
 
 async function addExhibitA(pdfDoc, legalDescription) {

@@ -343,18 +343,32 @@
   </div>
 
   <!-- ── VIEW: Success ────────────────────────────────────────────────────── -->
-  <div id="viewSuccess" class="hidden fade-in text-center py-16">
-    <div class="w-16 h-16 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
-      <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
+  <div id="viewSuccess" class="hidden fade-in">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-semibold text-slate-900">TODD Generated</h2>
+      </div>
+      <a id="downloadBtn" href="#" download=""
+        class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Download PDF
+      </a>
     </div>
-    <h2 class="text-xl font-semibold text-slate-900 mb-2">TODD Generated</h2>
-    <p class="text-sm text-slate-500 mb-2">Your filled deed has been downloaded.</p>
-    <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 inline-block mb-8">
+
+    <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4">
       Review all fields carefully before signing. This document requires notarization and two witnesses.
     </p>
-    <div>
+
+    <iframe id="pdfPreview" src="" class="w-full rounded-xl border border-slate-200 bg-slate-100" style="height: 75vh;" title="Generated TODD PDF"></iframe>
+
+    <div class="mt-6 text-center">
       <button onclick="startOver()"
         class="px-6 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 transition-colors">
         Start Over
@@ -381,6 +395,7 @@ let state = {
   selectedFile: null,
   warnings: [],
   beneficiaryCount: 1,
+  pdfBlobUrl: null,
 };
 
 // ─── Views ────────────────────────────────────────────────────────────────────
@@ -669,15 +684,16 @@ async function generateTODD() {
     }
 
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
+    if (state.pdfBlobUrl) URL.revokeObjectURL(state.pdfBlobUrl);
+    state.pdfBlobUrl = URL.createObjectURL(blob);
+
     const safeName = (data.grantor || 'TODD').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-    a.download = `TODD_${safeName}_${new Date().toISOString().split('T')[0]}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const filename = `TODD_${safeName}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    document.getElementById('pdfPreview').src = state.pdfBlobUrl;
+    const dlBtn = document.getElementById('downloadBtn');
+    dlBtn.href = state.pdfBlobUrl;
+    dlBtn.download = filename;
 
     showView('viewSuccess');
   } catch {
@@ -693,12 +709,16 @@ async function generateTODD() {
 
 // ─── Start Over ───────────────────────────────────────────────────────────────
 function startOver() {
+  if (state.pdfBlobUrl) {
+    URL.revokeObjectURL(state.pdfBlobUrl);
+  }
   state = {
     mode: null,
     currentView: 'viewModeSelect',
     selectedFile: null,
     warnings: [],
     beneficiaryCount: 1,
+    pdfBlobUrl: null,
   };
 
   document.getElementById('reviewForm').reset();

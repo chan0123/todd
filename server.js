@@ -55,6 +55,14 @@ RULES:
 
 const USER_PROMPT = `Extract all available fields from this California grant deed.
 
+FIELD NOTES:
+- granteeNames: Array of personal names ONLY — strip all vesting/title language.
+  Example: "John A. Smith and Mary B. Smith, Husband and Wife as Community Property with Right of Survivorship"
+  → ["John A. Smith", "Mary B. Smith"]
+  Keep professional titles/suffixes attached to the name (e.g. "John Smith, Trustee" → ["John Smith, Trustee"]).
+- granteeLineRaw: The full verbatim grantee line exactly as written, including vesting language.
+- legalDescriptionFull: Preserve EXACTLY as written — every word, abbreviation, and line break.
+
 Return exactly this JSON structure (null for any missing field):
 {
   "granteeNames": [],

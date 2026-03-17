@@ -280,6 +280,7 @@ app.post('/generate-todd', async (req, res) => {
     }
 
     set('Recording Requested By', d.recordingRequestedBy);
+    set('Name', d.recordingRequestedBy);
     set('Street Address #2', d.mailTo);
     set('Typed or Printed Name of Witness #1', d.witness1);
     set('Typed or Printed Name of Witness #2', d.witness2);

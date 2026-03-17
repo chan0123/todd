@@ -192,7 +192,7 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
     const extracted = JSON.parse(completion.choices[0].message.content);
 
     // Flag required fields that are null for UI highlighting
-    const warnings = ['grantor', 'county', 'apn', 'legalDescription'].filter(
+    const warnings = ['grantor', 'apn', 'legalDescription'].filter(
       (f) => !extracted[f]
     );
 
@@ -212,7 +212,6 @@ app.post('/generate-todd', async (req, res) => {
 
   const missing = [];
   if (!d.grantor) missing.push('Owner Name');
-  if (!d.county) missing.push('County');
   if (!d.apn) missing.push('APN');
   if (!d.legalDescription) missing.push('Legal Description');
   if (!d.beneficiary1) missing.push('Beneficiary 1');

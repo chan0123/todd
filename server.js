@@ -112,10 +112,15 @@ async function addExhibitA(pdfDoc, legalDescription) {
     return lines;
   }
 
+  // Match the size of the first page of the TODD deed
+  const firstPage = pdfDoc.getPage(0);
+  const { width: PAGE_WIDTH, height: PAGE_HEIGHT } = firstPage.getSize();
+
+  let insertIndex = 1; // insert right after page 0
+
   function newPage() {
-    const page = pdfDoc.addPage();
-    const { width, height } = page.getSize();
-    return { page, width, height, contentWidth: width - MARGIN * 2 };
+    const page = pdfDoc.insertPage(insertIndex++, [PAGE_WIDTH, PAGE_HEIGHT]);
+    return { page, width: PAGE_WIDTH, height: PAGE_HEIGHT, contentWidth: PAGE_WIDTH - MARGIN * 2 };
   }
 
   let { page, width, height, contentWidth } = newPage();

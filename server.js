@@ -4,6 +4,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { PDFDocument, PDFName, PDFBool, PDFDict, StandardFonts, rgb } = require('pdf-lib');
+const { createCanvas } = require('canvas');
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 const OpenAI = require('openai');
 
 const app = express();
@@ -173,6 +175,36 @@ async function addExhibitA(pdfDoc, legalDescription) {
   }
 }
 
+// ─── PDF → PNG (for scanned PDFs) ────────────────────────────────────────────
+
+class NodeCanvasFactory {
+  create(width, height) {
+    const canvas = createCanvas(width, height);
+    return { canvas, context: canvas.getContext('2d') };
+  }
+  reset({ canvas }, width, height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  destroy({ canvas }) {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
+async function pdfFirstPageToPng(pdfBuffer) {
+  const canvasFactory = new NodeCanvasFactory();
+  const pdf = await pdfjsLib.getDocument({
+    data: new Uint8Array(pdfBuffer),
+    canvasFactory,
+  }).promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({ scale: 2 }); // 2× for legibility
+  const { canvas, context } = canvasFactory.create(viewport.width, viewport.height);
+  await page.render({ canvasContext: context, viewport }).promise;
+  return canvas.toBuffer('image/png');
+}
+
 // ─── POST /extract ────────────────────────────────────────────────────────────
 
 app.post('/extract', upload.single('pdf'), async (req, res) => {
@@ -184,25 +216,35 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
   try {
     let messages;
 
+    const buffer = fs.readFileSync(filePath);
+
     if (mimeType === 'application/pdf') {
-      // PDF: extract text with pdf-parse, send as text to GPT-4o
+      // PDF: try text extraction first; fall back to vision for scanned PDFs
       const pdfParse = require('pdf-parse/lib/pdf-parse.js');
-      const buffer = fs.readFileSync(filePath);
       const { text } = await pdfParse(buffer);
 
-      if (!text || text.trim().length < 80) {
-        return res.status(422).json({
-          error: 'Could not extract text from this PDF — it may be a scanned image. Try uploading a photo of the deed instead.',
-        });
+      if (text && text.trim().length >= 80) {
+        messages = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: USER_PROMPT + text.substring(0, 8000) },
+        ];
+      } else {
+        // Scanned PDF — render first page to PNG and send to GPT-4o vision
+        const pngBuffer = await pdfFirstPageToPng(buffer);
+        const base64 = pngBuffer.toString('base64');
+        messages = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: USER_PROMPT },
+              { type: 'image_url', image_url: { url: `data:image/png;base64,${base64}` } },
+            ],
+          },
+        ];
       }
-
-      messages = [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: USER_PROMPT + text.substring(0, 8000) },
-      ];
     } else {
       // Image: send directly to GPT-4o vision as base64
-      const buffer = fs.readFileSync(filePath);
       const base64 = buffer.toString('base64');
 
       messages = [

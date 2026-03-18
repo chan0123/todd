@@ -62,6 +62,8 @@ FIELD NOTES:
   Keep professional titles/suffixes attached to the name (e.g. "John Smith, Trustee" → ["John Smith, Trustee"]).
 - granteeLineRaw: The full verbatim grantee line exactly as written, including vesting language.
 - legalDescriptionFull: Preserve EXACTLY as written — every word, abbreviation, and line break.
+- mailToStreet: Street address line only from the mail-to block (e.g. "123 Maple Street").
+- mailToCityZip: City, state and ZIP line from the mail-to block (e.g. "Los Angeles, CA 90001").
 
 Return exactly this JSON structure (null for any missing field):
 {
@@ -78,7 +80,8 @@ Return exactly this JSON structure (null for any missing field):
   "recordingDate": null,
   "instrumentNumber": null,
   "preparer": null,
-  "mailingAddressOnly": null,
+  "mailToStreet": null,
+  "mailToCityZip": null,
   "recordingRequestedBy": null
 }
 
@@ -366,7 +369,8 @@ app.post('/generate-todd', async (req, res) => {
 
       set('Recording Requested By', owners[0]);
       set('Name', owners[0]);
-      set('Street Address', d.mailTo);
+      set('Street Address', d.mailToStreet);
+      set('City, State & Zip Code', d.mailToCityZip);
       set('Typed or Printed Name of Witness #1', d.witness1);
       set('Typed or Printed Name of Witness #2', d.witness2);
       set('Date', d.signingDate);

@@ -406,24 +406,6 @@
       </a>
     </div>
 
-    <div class="bg-red-50 border border-red-300 rounded-lg px-4 py-4 mb-4">
-      <div class="flex gap-3">
-        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.07 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-        </svg>
-        <div class="space-y-1.5">
-          <p class="text-sm font-semibold text-red-800">Important — Read Before Proceeding</p>
-          <ul class="text-sm text-red-700 space-y-1 list-disc list-inside">
-            <li>Review every field carefully for accuracy before signing.</li>
-            <li>This document requires <strong>notarization</strong> and <strong>two witnesses</strong> to be valid.</li>
-            <li>An incorrectly completed or unnotarized deed may be rejected by the county recorder.</li>
-            <li>Recording this deed does not substitute for a will or trust — consult an estate planning attorney.</li>
-            <li>This tool is for document preparation only and does <strong>not</strong> constitute legal advice.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
     <iframe id="pdfPreview" src="" class="w-full rounded-xl border border-slate-200 bg-slate-100" style="height: 75vh;" title="Generated TODD PDF"></iframe>
 
     <div class="mt-6 text-center">
@@ -435,6 +417,29 @@
   </div>
 
 </main>
+
+<!-- ─── Disclaimer Modal ───────────────────────────────────────────────────── -->
+<div id="disclaimerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 space-y-4">
+    <div class="flex items-start gap-3">
+      <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.07 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+      </svg>
+      <h2 class="text-base font-semibold text-slate-900">Important — Read Before Proceeding</h2>
+    </div>
+    <ul class="text-sm text-slate-700 space-y-2 list-disc list-inside">
+      <li>Review every field carefully for accuracy before signing.</li>
+      <li>This document requires <strong>notarization</strong> and <strong>two witnesses</strong> to be valid.</li>
+      <li>An incorrectly completed or unnotarized deed may be rejected by the county recorder.</li>
+      <li>Recording this deed does not substitute for a will or trust — consult an estate planning attorney.</li>
+      <li>This tool is for document preparation only and does <strong>not</strong> constitute legal advice.</li>
+    </ul>
+    <button onclick="document.getElementById('disclaimerModal').classList.add('hidden')"
+      class="w-full py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors">
+      I Understand — Continue
+    </button>
+  </div>
+</div>
 
 <!-- ─── Footer ─────────────────────────────────────────────────────────────── -->
 <footer class="max-w-4xl mx-auto px-4 pb-10 mt-2">

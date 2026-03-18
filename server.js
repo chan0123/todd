@@ -349,14 +349,8 @@ app.post('/generate-todd', async (req, res) => {
         .filter(Boolean)
         .join('\n');
 
-      const cityStateZip = [d.city, d.state || 'California', d.zip]
-        .filter(Boolean)
-        .join(', ');
-
       set('Typed or Printed Name of Grantor', ownerName);
       set('Assessor Parcel Number', d.apn);
-      set('Street Address', d.propertyAddress);
-      set('City, State & Zip Code', cityStateZip);
       setMultiline('Beneficiary(ies)', beneficiaries);
 
       // Legal description: inline if fits one line, otherwise Exhibit A
@@ -372,7 +366,7 @@ app.post('/generate-todd', async (req, res) => {
 
       set('Recording Requested By', owners[0]);
       set('Name', owners[0]);
-      set('Street Address #2', d.mailTo);
+      set('Street Address', d.mailTo);
       set('Typed or Printed Name of Witness #1', d.witness1);
       set('Typed or Printed Name of Witness #2', d.witness2);
       set('Date', d.signingDate);

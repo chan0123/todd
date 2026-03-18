@@ -367,8 +367,8 @@ app.post('/generate-todd', async (req, res) => {
         }
       }
 
-      set('Recording Requested By', owners[0]);
-      set('Name', owners[0]);
+      set('Recording Requested By', ownerName);
+      set('Name', ownerName);
       set('Street Address', d.mailToStreet);
       set('City, State & Zip Code', d.mailToCityZip);
       set('Typed or Printed Name of Witness #1', d.witness1);

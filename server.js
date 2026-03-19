@@ -64,9 +64,11 @@ FIELD NOTES:
 - legalDescriptionFull: Preserve EXACTLY as written — every word, abbreviation, and line break.
 - mailToStreet: Street address line only from the mail-to block (e.g. "123 Maple Street").
 - mailToCityZip: City, state and ZIP line from the mail-to block (e.g. "Los Angeles, CA 90001").
+- isGrantDeed: Set to true ONLY if this document is clearly a California grant deed or similar property transfer deed. Set to false for anything else (invoices, contracts, wills, leases, etc.).
 
 Return exactly this JSON structure (null for any missing field):
 {
+  "isGrantDeed": null,
   "granteeNames": [],
   "granteeLineRaw": null,
   "vesting": null,
@@ -280,6 +282,10 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
 
     const extracted = JSON.parse(completion.choices[0].message.content);
     console.log('[/extract] LLM result:', JSON.stringify(extracted, null, 2));
+
+    if (extracted.isGrantDeed === false) {
+      return res.status(400).json({ error: 'This does not appear to be a grant deed. Please upload a California grant deed PDF and try again.' });
+    }
 
     // Flag required fields that are null for UI highlighting
     const warnings = ['granteeLineRaw', 'apn', 'legalDescriptionFull'].filter(

@@ -419,7 +419,7 @@
 </main>
 
 <!-- ─── Disclaimer Modal ───────────────────────────────────────────────────── -->
-<div id="disclaimerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+<div id="disclaimerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
   <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6 space-y-4">
     <div class="flex items-start gap-3">
       <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -834,6 +834,7 @@ async function generateTODD() {
     dlBtn.download = filename;
 
     showView('viewSuccess');
+    document.getElementById('disclaimerModal').classList.remove('hidden');
   } catch {
     errEl.textContent = 'Network error. Please try again.';
     errEl.classList.remove('hidden');

@@ -182,6 +182,18 @@
       </div>
     </div>
 
+    <div id="confidenceBanner" class="hidden my-5 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+      <div class="flex gap-3">
+        <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.07 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-amber-800">Low extraction confidence (<span id="confidenceScore"></span>%)</p>
+          <p class="text-sm text-amber-700 mt-0.5">The document may be unclear or partially scanned. Please verify every field carefully before generating the deed.</p>
+        </div>
+      </div>
+    </div>
+
     <form id="reviewForm" onsubmit="return false;" class="mt-5 space-y-4">
 
       <!-- Property Owner -->
@@ -634,6 +646,12 @@ async function extractData() {
       highlightWarningFields();
     }
 
+    const confidence = json.confidence ?? 100;
+    if (confidence < 90) {
+      document.getElementById('confidenceScore').textContent = confidence;
+      document.getElementById('confidenceBanner').classList.remove('hidden');
+    }
+
     showView('viewReview');
   } catch {
     showExtractError('Network error. Please check your connection and try again.');
@@ -873,6 +891,7 @@ function startOver() {
   document.getElementById('addBeneficiaryBtn').classList.remove('hidden');
   document.querySelectorAll('.warn-field').forEach((el) => el.classList.remove('warn-field'));
   document.getElementById('warningBanner').classList.add('hidden');
+  document.getElementById('confidenceBanner').classList.add('hidden');
   document.getElementById('generateError').classList.add('hidden');
   document.getElementById('uploadPlaceholder').classList.remove('hidden');
   document.getElementById('fileSelected').classList.add('hidden');

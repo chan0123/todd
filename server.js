@@ -65,10 +65,12 @@ FIELD NOTES:
 - mailToStreet: Street address line only from the mail-to block (e.g. "123 Maple Street").
 - mailToCityZip: City, state and ZIP line from the mail-to block (e.g. "Los Angeles, CA 90001").
 - isGrantDeed: Set to true ONLY if this document is clearly a California grant deed or similar property transfer deed. Set to false for anything else (invoices, contracts, wills, leases, etc.).
+- confidence: Integer 0–100 reflecting your confidence in the overall extraction quality. Consider document clarity, scan quality, completeness, and legibility. 100 = perfectly clear digital text, 0 = completely unreadable.
 
 Return exactly this JSON structure (null for any missing field):
 {
   "isGrantDeed": null,
+  "confidence": null,
   "granteeNames": [],
   "granteeLineRaw": null,
   "vesting": null,
@@ -287,6 +289,12 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
       return res.status(400).json({ error: 'This does not appear to be a grant deed. Please upload a California grant deed PDF and try again.' });
     }
 
+    const confidence = typeof extracted.confidence === 'number' ? extracted.confidence : 100;
+
+    if (confidence < 50) {
+      return res.status(400).json({ error: `The document is too unclear to extract reliably (confidence: ${confidence}%). Please use a clearer scan or enter your details manually.` });
+    }
+
     // Flag required fields that are null for UI highlighting
     const warnings = ['granteeLineRaw', 'apn', 'legalDescriptionFull'].filter(
       (f) => {
@@ -295,7 +303,7 @@ app.post('/extract', upload.single('pdf'), async (req, res) => {
       }
     );
 
-    res.json({ data: extracted, warnings });
+    res.json({ data: extracted, warnings, confidence });
   } catch (err) {
     console.error('[/extract]', err.message);
     const isQuotaError = err.status === 429 ||

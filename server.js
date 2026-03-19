@@ -17,6 +17,18 @@ if (!process.env.OPENAI_API_KEY) {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// ─── Daily usage limit ────────────────────────────────────────────────────────
+const DAILY_LIMIT = parseInt(process.env.DAILY_AI_LIMIT || '20', 10);
+const usage = { date: '', count: 0 };
+
+function checkDailyLimit() {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  if (usage.date !== today) { usage.date = today; usage.count = 0; }
+  if (usage.count >= DAILY_LIMIT) return false;
+  usage.count++;
+  return true;
+}
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -220,6 +232,10 @@ async function pdfFirstPageToPng(pdfBuffer) {
 
 app.post('/extract', upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file provided' });
+  if (!checkDailyLimit()) {
+    fs.unlink(req.file.path, () => {});
+    return res.status(429).json({ error: 'Daily AI extraction limit reached. Please try again tomorrow, or enter your details manually.' });
+  }
 
   const filePath = req.file.path;
   const mimeType = req.file.mimetype;
